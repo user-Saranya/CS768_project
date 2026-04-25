@@ -1,7 +1,7 @@
 import time
 import numpy as np
 import torch
-import torch.nn as nn
+import torch.nn.functional as F
 
 from .GNN import GNNModelDGL, GATDGL
 from .Base import BaseModel
@@ -20,7 +20,7 @@ class BGNN_NDT(BaseModel):
                  use_leaderboard=False,
                  num_trees=5,
                  tree_depth=3):
-        
+
         super(BaseModel, self).__init__()
 
         self.learning_rate = lr
@@ -58,7 +58,7 @@ class BGNN_NDT(BaseModel):
     def init_ndt(self):
         self.ndt = NeuralDecisionForest(
             input_dim=self.raw_input_dim,
-            output_dim=self.raw_input_dim,  # feature transformer
+            output_dim=self.raw_input_dim,   # feature transformation
             num_trees=self.num_trees,
             depth=self.tree_depth
         ).to(self.device)
@@ -66,14 +66,15 @@ class BGNN_NDT(BaseModel):
     # ---------------- Forward ---------------- #
     def forward(self, graph, x):
         x_transformed = self.ndt(x)
-        return self.model(graph, x_transformed)
+        out = self.model(graph, x_transformed)
+        return out
 
     # ---------------- Training ---------------- #
     def fit(self, networkx_graph, X, y, train_mask, val_mask, test_mask, cat_features,
             num_epochs, patience, logging_epochs=1, loss_fn=None, metric_name='loss',
             normalize_features=True, replace_na=True):
 
-        # metrics
+        # -------- Metrics setup -------- #
         if metric_name in ['r2', 'accuracy']:
             best_metric = [np.float('-inf')] * 3
         else:
@@ -83,6 +84,10 @@ class BGNN_NDT(BaseModel):
         epochs_since_last_best_metric = 0
         metrics = ddict(list)
 
+        if cat_features is None:
+            cat_features = []
+
+        # -------- Output dimension -------- #
         if self.task == 'regression':
             self.out_dim = y.shape[1]
         else:
@@ -90,34 +95,38 @@ class BGNN_NDT(BaseModel):
 
         # -------- Feature preprocessing -------- #
         encoded_X = X.copy()
+
         if len(cat_features):
-            encoded_X = self.encode_cat_features(encoded_X, y, cat_features,
-                                                 train_mask, val_mask, test_mask)
+            encoded_X = self.encode_cat_features(
+                encoded_X, y, cat_features,
+                train_mask, val_mask, test_mask
+            )
 
         if normalize_features:
-            encoded_X = self.normalize_features(encoded_X,
-                                                train_mask, val_mask, test_mask)
+            encoded_X = self.normalize_features(
+                encoded_X, train_mask, val_mask, test_mask
+            )
 
         if replace_na:
             encoded_X = self.replace_na(encoded_X, train_mask)
 
-        # convert to torch
+        # -------- Convert to torch -------- #
         x = torch.from_numpy(encoded_X.to_numpy()).float().to(self.device)
         self.raw_input_dim = x.shape[1]
+        self.in_dim = self.raw_input_dim
 
         y, = self.pandas_to_torch(y)
         self.y = y
 
-        # graph
+        # -------- Graph -------- #
         graph = self.networkx_to_torch(networkx_graph)
         self.graph = graph
 
-        # init models
-        self.in_dim = self.raw_input_dim
+        # -------- Init models -------- #
         self.init_gnn_model()
         self.init_ndt()
 
-        # optimizer (joint!)
+        # -------- Optimizer (joint!) -------- #
         optimizer = torch.optim.Adam(
             list(self.model.parameters()) + list(self.ndt.parameters()),
             lr=self.learning_rate
@@ -128,21 +137,42 @@ class BGNN_NDT(BaseModel):
         for epoch in pbar:
             start = time.time()
 
-            optimizer.zero_grad()
+            self.model.train()
+            self.ndt.train()
 
+            # forward
             out = self.forward(graph, x)
 
-            loss = self.train_and_evaluate(
-                (graph, out), y,
-                train_mask, val_mask, test_mask,
-                optimizer=None,  # we handle manually
-                metrics=metrics,
-                iter_per_epoch=1
-            )
+            # loss
+            if self.task == 'regression':
+                loss = torch.sqrt(F.mse_loss(out[train_mask], y[train_mask]))
+            else:
+                loss = F.cross_entropy(out[train_mask], y[train_mask].long())
 
+            # backward
+            optimizer.zero_grad()
             loss.backward()
             optimizer.step()
 
+            # -------- Evaluation -------- #
+            self.model.eval()
+            self.ndt.eval()
+
+            with torch.no_grad():
+                out = self.forward(graph, x)
+
+                train_res = self.evaluate_model(out, y, train_mask)
+                val_res = self.evaluate_model(out, y, val_mask)
+                test_res = self.evaluate_model(out, y, test_mask)
+
+            for key in train_res:
+                metrics[key].append((
+                    train_res[key].item(),
+                    val_res[key].item(),
+                    test_res[key].item()
+                ))
+
+            # -------- Logging -------- #
             self.log_epoch(
                 pbar, metrics, epoch, loss,
                 time.time() - start,
@@ -150,7 +180,7 @@ class BGNN_NDT(BaseModel):
                 metric_name=metric_name
             )
 
-            # early stopping
+            # -------- Early stopping -------- #
             best_metric, best_val_epoch, epochs_since_last_best_metric = \
                 self.update_early_stopping(
                     metrics, epoch,
@@ -172,7 +202,14 @@ class BGNN_NDT(BaseModel):
 
         return metrics
 
+    # ---------------- Prediction ---------------- #
     def predict(self, graph, X, y, test_mask):
         x = torch.from_numpy(X.to_numpy()).float().to(self.device)
-        out = self.forward(graph, x)
-        return self.evaluate_model((graph, out), y, test_mask)
+
+        self.model.eval()
+        self.ndt.eval()
+
+        with torch.no_grad():
+            out = self.forward(graph, x)
+
+        return self.evaluate_model(out, y, test_mask)
