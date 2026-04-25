@@ -268,6 +268,8 @@ class RunModel:
                     self.run_one_model(config_fn=config_dir / 'resgnn.yaml', model_name="resgnn")
                 elif arg == 'bgnn':
                     self.run_one_model(config_fn=config_dir / 'bgnn.yaml', model_name="bgnn")
+                elif arg == 'bgnn_ndt':
+                    self.run_one_model(config_fn=config_dir / 'bgnn_ndt.yaml', model_name="bgnn_ndt")
 
             self.save_results(seed)
             if ix+1 >= max_seeds:
