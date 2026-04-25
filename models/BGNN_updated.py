@@ -65,8 +65,9 @@ class BGNN_NDT(BaseModel):
 
     # ---------------- Forward ---------------- #
     def forward(self, graph, x):
-        x_transformed = self.ndt(x)
-        out = self.model(graph, x_transformed)
+        x_ndt = self.ndt(x)
+        x_combined = torch.cat([x, x_ndt], dim=1)
+        out = self.model(graph, x_combined)
         return out
 
     # ---------------- Training ---------------- #
@@ -113,7 +114,7 @@ class BGNN_NDT(BaseModel):
         # -------- Convert to torch -------- #
         x = torch.from_numpy(encoded_X.to_numpy()).float().to(self.device)
         self.raw_input_dim = x.shape[1]
-        self.in_dim = self.raw_input_dim
+        self.in_dim = 2 * self.raw_input_dim
 
         y, = self.pandas_to_torch(y)
         self.y = y
