@@ -12,6 +12,8 @@ from .Base import BaseModel
 from torch.autograd import Variable
 from collections import defaultdict as ddict
 from .MLP import MLPRegressor
+from dgl.nn.pytorch import SAGEConv
+from dgl.nn.pytorch import GINConv
 
 
 class ElementWiseLinear(nn.Module):
@@ -157,7 +159,25 @@ class GNNModelDGL(torch.nn.Module):
             self.lin1 = Sequential(Dropout(p=dropout), Linear(in_dim, hidden_dim),
                        ReLU(), Dropout(p=dropout), Linear(hidden_dim, out_dim))
             self.l1 = APPNPConv(k=10, alpha=0.1, edge_drop=0.)
-
+        elif name == 'sage':
+            self.l1 = SAGEConv(in_dim, hidden_dim, aggregator_type='mean')
+            self.l2 = SAGEConv(hidden_dim, out_dim, aggregator_type='mean')
+            self.drop = Dropout(p=dropout)
+        elif name == 'gin':
+            mlp1 = Sequential(
+                Linear(in_dim, hidden_dim),
+                ReLU(),
+                Linear(hidden_dim, hidden_dim)
+            )
+        
+            mlp2 = Sequential(
+                Linear(hidden_dim, hidden_dim),
+                ReLU(),
+                Linear(hidden_dim, out_dim)
+            )
+            self.l1 = GINConv(mlp1, learn_eps=True)
+            self.l2 = GINConv(mlp2, learn_eps=True)
+            self.drop = Dropout(p=dropout)
 
     def forward(self, graph, features):
         h = features
@@ -177,12 +197,12 @@ class GNNModelDGL(torch.nn.Module):
             h = self.l1(graph, h)
             h = self.l2(graph, h)
             logits = self.lin2(h)
-        elif self.name in ['gcn', 'cheb']:
+        elif self.name in ['gcn', 'cheb', 'sage', 'gin']:
             h = self.drop(h)
             h = self.l1(graph, h)
+            h = F.relu(h)
             logits = self.l2(graph, h)
-
-
+            
         return logits
 
 class GNN(BaseModel):
