@@ -1,0 +1,21 @@
+hp:
+  lr:
+    - 0.001
+    - 0.01
+  hidden_dim:
+    - 64
+    - 128
+  name:
+    - sage
+    - gin
+  dropout:
+    - 0.0
+    - 0.5
+  num_trees:
+    - 3
+    - 5
+  tree_depth:
+    - 3
+    - 5
+num_epochs: 200
+patience: 20
