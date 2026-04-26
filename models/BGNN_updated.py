@@ -146,7 +146,7 @@ class BGNN_NDT(BaseModel):
 
             # loss
             if self.task == 'regression':
-                loss = torch.sqrt(F.mse_loss(out[train_mask], y[train_mask]))
+                loss = torch.sqrt(F.mse_loss(out[train_mask].squeeze(), y[train_mask]))
             else:
                 loss = F.cross_entropy(out[train_mask], y[train_mask].long())
 
