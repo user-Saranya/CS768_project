@@ -73,7 +73,7 @@ class BGNN_NDT(BaseModel):
         x_ndt = self.norm(x_ndt)
     
         # residual connection 
-        x = x + x_ndt
+        # x = x + x_ndt
     
         # concatenation
         x_combined = torch.cat([x, x_ndt], dim=1)
