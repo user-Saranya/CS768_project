@@ -66,6 +66,7 @@ class BGNN_NDT(BaseModel):
     # ---------------- Forward ---------------- #
     def forward(self, graph, x):
         x_ndt = self.ndt(x)
+        x = x + 0.2 * x_ndt
         x_combined = torch.cat([x, x_ndt], dim=1)
         out = self.model(graph, x_combined)
         return out
