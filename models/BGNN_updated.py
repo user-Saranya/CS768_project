@@ -143,10 +143,11 @@ class BGNN_NDT(BaseModel):
 
             # forward
             out = self.forward(graph, x)
+            out = out.squeeze(-1)
 
             # loss
             if self.task == 'regression':
-                loss = torch.sqrt(F.mse_loss(out[train_mask].squeeze(), y[train_mask]))
+                loss = torch.sqrt(F.mse_loss(out[train_mask], y[train_mask]))
             else:
                 loss = F.cross_entropy(out[train_mask], y[train_mask].long())
 
@@ -161,6 +162,7 @@ class BGNN_NDT(BaseModel):
 
             with torch.no_grad():
                 out = self.forward(graph, x)
+                out = out.squeeze(-1)
 
                 train_res = self.evaluate_model(out, y, train_mask)
                 val_res = self.evaluate_model(out, y, val_mask)
@@ -212,5 +214,6 @@ class BGNN_NDT(BaseModel):
 
         with torch.no_grad():
             out = self.forward(graph, x)
+            out = out.squeeze(-1)
 
         return self.evaluate_model(out, y, test_mask)
