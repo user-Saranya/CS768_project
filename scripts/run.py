@@ -7,6 +7,7 @@ from bgnn.models.MLP import MLP
 from bgnn.models.GNN import GNN
 from bgnn.models.BGNN import BGNN
 from bgnn.models.BGNN_updated import BGNN_NDT
+from bgnn.models.bgnn_transformer import BGNN_Transformer
 from bgnn.scripts.utils import NpEncoder
 
 import os
@@ -151,6 +152,8 @@ class RunModel:
             return BGNN(self.task, **ps)
         elif model_name == 'bgnn_ndt':
             return BGNN_NDT(self.task, **ps)
+        elif model_name == 'bgnn_transformer':
+            return BGNN_Transformer(self.task, **ps)
 
     def create_save_folder(self, seed):
         self.seed_folder = f'{self.save_folder}/{seed}'
@@ -187,7 +190,7 @@ class RunModel:
         return 'unknown'
 
     def aggregate_results(self):
-        algos = ['catboost', 'lightgbm', 'mlp', 'gnn', 'resgnn', 'bgnn', 'bgnn_ndt']
+        algos = ['catboost', 'lightgbm', 'mlp', 'gnn', 'resgnn', 'bgnn', 'bgnn_ndt', 'bgnn_transformer']
         model_best_score = ddict(list)
         model_best_time = ddict(list)
 
@@ -270,6 +273,8 @@ class RunModel:
                     self.run_one_model(config_fn=config_dir / 'bgnn.yaml', model_name="bgnn")
                 elif arg == 'bgnn_ndt':
                     self.run_one_model(config_fn=config_dir / 'bgnn_ndt.yaml', model_name="bgnn_ndt")
+                elif arg == 'bgnn_transformer':
+                    self.run_one_model(config_fn=config_dir / 'bgnn_transformer.yaml', model_name="bgnn_transformer")
 
             self.save_results(seed)
             if ix+1 >= max_seeds:
