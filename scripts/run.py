@@ -257,7 +257,8 @@ class RunModel:
                     self.run_one_model(config_fn=config_dir / 'gnn.yaml', model_name="gnn")
                     self.run_one_model(config_fn=config_dir / 'resgnn.yaml', model_name="resgnn")
                     self.run_one_model(config_fn=config_dir / 'bgnn.yaml', model_name="bgnn")
-                    self.run_one_model(config_fn=config_dir / 'bgnn_ndt.yaml', model_name="bgnn_ndt")
+                    self.run_one_model(config_fn=config_dir / 'bgnn_ndt_sage.yaml', model_name="bgnn_ndt")
+                    self.run_one_model(config_fn=config_dir / 'bgnn_ndt_gin.yaml', model_name="bgnn_ndt")
                     break
                 elif arg == 'catboost':
                     self.run_one_model(config_fn=config_dir / 'catboost.yaml', model_name="catboost")
@@ -271,8 +272,10 @@ class RunModel:
                     self.run_one_model(config_fn=config_dir / 'resgnn.yaml', model_name="resgnn")
                 elif arg == 'bgnn':
                     self.run_one_model(config_fn=config_dir / 'bgnn.yaml', model_name="bgnn")
-                elif arg == 'bgnn_ndt':
-                    self.run_one_model(config_fn=config_dir / 'bgnn_ndt.yaml', model_name="bgnn_ndt")
+                elif arg == 'bgnn_ndt_sage':
+                    self.run_one_model(config_fn=config_dir / 'bgnn_ndt_sage.yaml', model_name="bgnn_ndt")
+                elif arg == 'bgnn_ndt_gin':
+                    self.run_one_model(config_fn=config_dir / 'bgnn_ndt_gin.yaml', model_name="bgnn_ndt")
                 elif arg == 'bgnn_transformer':
                     self.run_one_model(config_fn=config_dir / 'bgnn_transformer.yaml', model_name="bgnn_transformer")
 
