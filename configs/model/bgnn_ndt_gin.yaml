@@ -1,0 +1,21 @@
+hp:
+  lr:
+    - 0.005
+    - 0.01
+  hidden_dim:
+    - 64
+    - 128
+  name:
+    - gin
+  dropout:
+    - 0.1
+    - 0.2
+    - 0.3
+  num_trees:
+    - 5
+    - 10
+  tree_depth:
+    - 5
+    - 7
+num_epochs: 200
+patience: 20
