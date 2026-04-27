@@ -66,8 +66,14 @@ class BGNN_NDT(BaseModel):
     # ---------------- Forward ---------------- #
     def forward(self, graph, x):
         x_ndt = self.ndt(x)
-        x = x + 0.2 * x_ndt
-        x_combined = torch.cat([x, x_ndt], dim=1)
+
+        if self.name == 'gin':
+            x_combined = torch.cat([x, x_ndt], dim=1)
+        else:
+            x_mixed = x + 0.2 * x_ndt
+            x_combined = torch.cat([x_mixed, x_ndt], dim=1)
+    
+        x_combined = F.dropout(x_combined, p=self.dropout, training=self.training)
         out = self.model(graph, x_combined)
         return out
 
