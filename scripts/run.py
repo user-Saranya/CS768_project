@@ -114,7 +114,7 @@ class RunModel:
 
                 inputs = {'X': self.X, 'y': self.y, 'train_mask': self.train_mask,
                           'val_mask': self.val_mask, 'test_mask': self.test_mask, 'cat_features': self.cat_features}
-                if model_name in ['gnn', 'resgnn', 'bgnn', 'bgnn_ndt']:
+                if model_name in ['gnn', 'resgnn', 'bgnn', 'bgnn_ndt', 'bgnn_transformer']:
                     inputs['networkx_graph'] = self.networkx_graph
 
                 metrics = model.fit(num_epochs=self.config.num_epochs, patience=self.config.patience,
