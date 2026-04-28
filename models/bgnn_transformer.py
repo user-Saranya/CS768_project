@@ -70,7 +70,7 @@ class BGNN_Transformer(BaseModel):
         x_refined = x + self.alpha * x_ndt
 
         # concatenate features
-        x_combined = torch.cat([x_refined, x_ndt], dim=1)
+        x_combined = x
 
         # optional stabilization
         x_combined = F.dropout(x_combined, p=self.dropout, training=self.training)
